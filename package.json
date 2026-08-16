@@ -1,6 +1,6 @@
 {
   "name": "cash-tray-manager",
-  "version": "9.9.0",
+  "version": "9.10.0",
   "private": true,
   "description": "ATM cash tray loading manager (single-page web app + Apps Script backend)",
   "scripts": {

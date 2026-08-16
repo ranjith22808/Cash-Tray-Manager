@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cash Tray Manager v9.9</title>
+  <title>Cash Tray Manager v9.10</title>
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon-192.png" type="image/png" />
@@ -61,6 +61,13 @@
     .btn-danger { background: var(--danger); color: white; }
     .btn-outline { background: white; border: 1px solid var(--border); color: var(--gray); }
     .section-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 15px; border-left: 4px solid var(--primary); padding-left: 10px; }
+
+    /* Entry page: bold tray headers, field labels, and summary labels */
+    .calc-header { margin-bottom: 15px; }
+    .calc-title { font-weight: 800; font-size: 17px; color: var(--dark); }
+    .calc-subtitle { font-weight: 700; font-size: 14px; color: var(--gray); }
+    #entryTab label { font-weight: 700 !important; }
+    .stat-label { font-weight: 700; color: var(--gray); }
 
     /* Notification & Loader */
     .notification { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; color: white; font-weight: 600; transform: translateX(150%); transition: 0.4s; z-index: 2000; }
@@ -190,7 +197,7 @@
 
   <div class="container">
     <header>
-      <div class="app-title"><i class="fas fa-wallet"></i> Cash Tray Manager v9.9</div>
+      <div class="app-title"><i class="fas fa-wallet"></i> Cash Tray Manager v9.10</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <button id="installBtn" class="btn" style="display:none;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.35);padding:8px 14px;" onclick="installApp()"><i class="fas fa-download"></i> Install</button>
         <span id="pendingBadge" style="display:none;background:var(--warning);color:#fff;border-radius:20px;padding:5px 12px;font-size:12px;align-items:center;gap:6px;"><i class="fas fa-cloud-upload-alt"></i> <span id="pendingCount">0</span> pending</span>
@@ -261,6 +268,7 @@
       <div style="text-align:right;">
         <button class="btn btn-outline" onclick="carryForward()"><i class="fas fa-arrow-down"></i> Carry Forward</button>
         <button class="btn btn-outline" onclick="resetForm()">Reset Form</button>
+        <button class="btn btn-success" onclick="sendWhatsApp()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
         <button class="btn btn-warning" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;background:var(--warning);color:white;"><i class="fas fa-times"></i> Cancel Edit</button>
         <button class="btn btn-primary" onclick="saveData()"><i class="fas fa-save"></i> Save Entry</button>
       </div>
@@ -337,6 +345,7 @@
           <div class="stat-box"><div class="stat-label">Total Notes (Added)</div><div class="stat-number" id="ms_tnotes">0</div><div class="stat-sub" id="ms_tval">Value: ₹0</div></div>
         </div>
         <div style="text-align:right;margin-top:10px;margin-bottom:20px;" class="no-print">
+          <button class="btn btn-success" onclick="sendWhatsAppMulti()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
           <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print Summary</button>
         </div>
       </div>
@@ -445,6 +454,14 @@
             <div style="flex:1;"><label style="font-size:11px;color:var(--gray);">Tray 3</label><input type="number" id="set_d3" class="input-box" min="1" step="1"></div>
           </div>
           <p style="font-size:11px;color:var(--gray);margin-top:6px;">Applied to the Entry tray labels and calculations. Existing history keeps its saved values.</p>
+        </div>
+
+        <div style="margin-bottom:25px;">
+          <label style="font-size:12px;font-weight:600;color:var(--gray);">WHATSAPP NUMBER (optional)</label>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <input type="text" id="set_wa" class="input-box" placeholder="e.g. 91XXXXXXXXXX" style="text-align:left;">
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:6px;">Used for the WhatsApp share button. Leave empty to choose a contact each time.</p>
         </div>
 
         <button class="btn btn-success" onclick="saveSettings()" style="width:100%;">Save Configuration</button>

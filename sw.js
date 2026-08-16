@@ -8,7 +8,7 @@
  *  - Google Apps Script API: network only (never cached, POST and GET pass through).
  */
 
-const CACHE = 'ctm-v9.9';
+const CACHE = 'ctm-v9.10';
 const APP_SHELL = [
   './',
   './index.html',

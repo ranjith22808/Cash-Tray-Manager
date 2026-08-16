@@ -3,7 +3,7 @@
               openSheet, addAtm, saveSettings, setRange, generateReport,
               exportToExcel, handleDualPagePrint, generateDownloadablePDF,
               openCamera, capturePhoto, closeCamera, printEntry, editEntry, deleteEntry,
-              installApp, multiSelectAll, multiClear, updateMultiSummary */
+              installApp, multiSelectAll, multiClear, updateMultiSummary, sendWhatsApp, sendWhatsAppMulti */
 
     /* ================= CONFIGURATION ================= */
     // NOTE: Client-side secrets are visible to anyone. The token protects the sheet
@@ -351,6 +351,56 @@
       notify(`Opening carried from ${prev.date}`, 'success');
     }
 
+    /* ================= WHATSAPP SHARE ================= */
+    function formEntryData(){
+      const g = v => Number($(v).value)||0;
+      const mk = (o,a) => { const total = g(o)+g(a); return {opening:g(o), added:g(a), totalNotes:total, totalValue:total*(o==='t1_open'?D1:o==='t2_open'?D2:D3)}; };
+      return {
+        date: $('date').value,
+        atmIds: [$('atm_select').value].filter(Boolean),
+        bankIndentNo: $('bank_indent_no').value,
+        bankIndentVal: g('bank_indent_val'),
+        trays: { t1:mk('t1_open','t1_added'), t2:mk('t2_open','t2_added'), t3:mk('t3_open','t3_added') }
+      };
+    }
+
+    function buildWhatsAppText(e){
+      const fmt = n => '₹' + Number(n||0).toLocaleString();
+      const t1=e.trays.t1, t2=e.trays.t2, t3=e.trays.t3;
+      const tray = (name, t, d) => `*${name} (${fmt(d)})*\nOpening: ${t.opening} | Added: ${t.added} | Total: ${t.totalNotes} notes\nValue: ${fmt(t.totalValue)}`;
+      const totalNotes = Number(t1.totalNotes)+Number(t2.totalNotes)+Number(t3.totalNotes);
+      const totalVal = cleanNum(t1.totalValue)+cleanNum(t2.totalValue)+cleanNum(t3.totalValue);
+      const loadedVal = (Number(t1.added||0)*D1)+(Number(t2.added||0)*D2)+(Number(t3.added||0)*D3);
+      return [
+        '*Cash Tray Entry Details*',
+        '',
+        '*Date:* ' + (e.date||'-'),
+        '*ATM:* ' + ((e.atmIds||[]).join(', ') || '-'),
+        '*Indent No:* ' + (e.bankIndentNo||'-'),
+        '*Indent Amount:* ' + fmt(e.bankIndentVal),
+        '',
+        tray('Tray 1', t1, D1),
+        '',
+        tray('Tray 2', t2, D2),
+        '',
+        tray('Tray 3', t3, D3),
+        '',
+        '*Summary*',
+        'Total Notes: ' + totalNotes,
+        'Total Value: ' + fmt(totalVal),
+        'Total Loaded: ' + fmt(loadedVal)
+      ].join('\n');
+    }
+
+    function sendWhatsApp(idOrObj){
+      const e = typeof idOrObj === 'string' ? globalData.find(x => x.id === idOrObj) : (idOrObj || formEntryData());
+      if(!e || !e.date || !e.bankIndentNo) return notify('Fill the entry details first', 'error');
+      let wa = '';
+      try { wa = (JSON.parse(localStorage.getItem('ctm_v53')||'{}').wa)||''; } catch(err){ /* ignore malformed settings */ }
+      wa = String(wa).replace(/[^\d]/g,'');
+      window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(buildWhatsAppText(e)), '_blank');
+    }
+
     /* ================= 2-PAGE PRINT LOGIC ================= */
     async function handleDualPagePrint(){
         const entryId = $('merge_entry_select').value;
@@ -582,6 +632,7 @@
             <td rowspan="4" class="text-center" style="vertical-align:middle;border-left:1px solid #f1f5f9;">
                <button onclick="editEntry('${e.id}')" style="cursor:pointer;border:none;background:none;color:var(--warning);font-size:16px;margin-right:8px;"><i class="fas fa-edit"></i></button>
                <button onclick="deleteEntry('${e.id}')" style="cursor:pointer;border:none;background:none;color:var(--danger);font-size:16px;margin-right:8px;"><i class="fas fa-trash"></i></button>
+               <button onclick="sendWhatsApp('${e.id}')" style="cursor:pointer;border:none;background:none;color:#25D366;font-size:16px;margin-right:8px;"><i class="fab fa-whatsapp"></i></button>
                <div style="margin-top:8px;"><button onclick="printEntry('${e.id}')" style="cursor:pointer;border:none;background:var(--primary);color:white;padding:6px 10px;border-radius:6px;font-size:12px;"><i class="fas fa-print"></i> Slip</button></div>
             </td>
           </tr>
@@ -807,6 +858,39 @@
       updateMultiSummary();
     }
 
+    function sendWhatsAppMulti(){
+      const list = multiSelectedEntries();
+      if(!list.length) return notify('Select at least one day in the Multi-Day tab', 'error');
+      const fmt = n => '₹' + Number(n||0).toLocaleString();
+      const lines = ['*Multi-Day Cash Tray Summary*', ''];
+      let indent=0, loaded=0, n200=0, n100=0, n500=0;
+      list.forEach(e => {
+        const t1=e.trays.t1, t2=e.trays.t2, t3=e.trays.t3;
+        const l = (Number(t1.added)*D1)+(Number(t2.added)*D2)+(Number(t3.added)*D3);
+        indent += Number(e.bankIndentVal)||0;
+        loaded += l;
+        n200 += Number(t1.added); n100 += Number(t2.added); n500 += Number(t3.added);
+        lines.push('*' + e.date + '* (' + (e.atmIds||[]).join(', ') + ')');
+        lines.push('Indent: ' + fmt(e.bankIndentVal) + ' | Loaded: ' + fmt(l));
+      });
+      const variance = indent - loaded;
+      const notes = n200 + n100 + n500;
+      lines.push('', '*Combined Summary*');
+      lines.push('Days: ' + list.length);
+      lines.push('Total Indent: ' + fmt(indent));
+      lines.push('Total Loaded: ' + fmt(loaded));
+      lines.push('Variance: ' + fmt(variance));
+      lines.push('');
+      lines.push('₹200 Notes (Added): ' + n200.toLocaleString() + ' (' + fmt(n200*D1) + ')');
+      lines.push('₹100 Notes (Added): ' + n100.toLocaleString() + ' (' + fmt(n100*D2) + ')');
+      lines.push('₹500 Notes (Added): ' + n500.toLocaleString() + ' (' + fmt(n500*D3) + ')');
+      lines.push('Total Notes (Added): ' + notes.toLocaleString() + ' (' + fmt(loaded) + ')');
+      let wa = '';
+      try { wa = (JSON.parse(localStorage.getItem('ctm_v53')||'{}').wa)||''; } catch(err){ /* ignore malformed settings */ }
+      wa = String(wa).replace(/[^\d]/g,'');
+      window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    }
+
     /* ================= FIXED ANALYTICS (ADDED NOTES ONLY) ================= */
     function renderAnalytics() {
       const dates={}, counts={t1:0,t2:0,t3:0}, atmData={};
@@ -887,6 +971,7 @@
     function loadSettings(){
       const s=JSON.parse(localStorage.getItem('ctm_v53')||'{}');
       $('set_sheet').value=s.sheet||DEF_SHEET_ID;
+      $('set_wa').value=s.wa||'';
       atmList=s.atms||['FZIS0005'];
       // Migrate the old placeholder default to the real ATM id
       if(atmList.length===1 && atmList[0]==='ATM001') atmList=['FZIS0005'];
@@ -902,7 +987,7 @@
       const d2=Math.max(1,Math.round(Number($('set_d2').value)||100));
       const d3=Math.max(1,Math.round(Number($('set_d3').value)||500));
       D1=d1; D2=d2; D3=d3; updateDenomLabels();
-      localStorage.setItem('ctm_v53',JSON.stringify({sheet:$('set_sheet').value,atms:atmList,denoms:{d1,d2,d3}}));
+      localStorage.setItem('ctm_v53',JSON.stringify({sheet:$('set_sheet').value,atms:atmList,denoms:{d1,d2,d3},wa:$('set_wa').value.trim()}));
       renderAtms(); calculate(); notify('Configuration Saved');
     }
     function updateDenomLabels(){
