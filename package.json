@@ -1,0 +1,15 @@
+{
+  "name": "cash-tray-manager",
+  "version": "9.9.0",
+  "private": true,
+  "description": "ATM cash tray loading manager (single-page web app + Apps Script backend)",
+  "scripts": {
+    "lint": "eslint app.js",
+    "check": "eslint app.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
