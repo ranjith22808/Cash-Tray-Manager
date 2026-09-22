@@ -1,4 +1,4 @@
-﻿    /* Functions referenced by inline onclick/onchange handlers in index.html. */
+    /* Functions referenced by inline onclick/onchange handlers in index.html. */
     /* exported refreshData, resetForm, saveData, cancelEdit, carryForward,
               openSheet, addAtm, saveSettings, setRange, generateReport,
               exportToExcel, handleDualPagePrint, generateDownloadablePDF,
@@ -351,7 +351,127 @@
       notify(`Opening carried from ${prev.date}`, 'success');
     }
 
-    /* ================= WHATSAPP SHARE ================= */
+    /* ================= NUMBER TO WORDS & WHATSAPP SHARE ================= */
+    function numToWordsEN(num) {
+      num = Math.floor(Number(num) || 0);
+      if (num === 0) return 'Zero';
+      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+                    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      function convertBelowThousand(n) {
+        let str = '';
+        if (n >= 100) {
+          str += ones[Math.floor(n / 100)] + ' Hundred ';
+          n %= 100;
+        }
+        if (n >= 20) {
+          str += tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+        } else if (n > 0) {
+          str += ones[n];
+        }
+        return str.trim();
+      }
+      let words = '';
+      const crore = Math.floor(num / 10000000);
+      num %= 10000000;
+      const lakh = Math.floor(num / 100000);
+      num %= 100000;
+      const thousand = Math.floor(num / 1000);
+      num %= 1000;
+      const remainder = num;
+      if (crore > 0) words += convertBelowThousand(crore) + ' Crore ';
+      if (lakh > 0) words += convertBelowThousand(lakh) + ' Lakh ';
+      if (thousand > 0) words += convertBelowThousand(thousand) + ' Thousand ';
+      if (remainder > 0) words += convertBelowThousand(remainder);
+      return words.trim();
+    }
+
+    function numToWordsTA(num) {
+      num = Math.floor(Number(num) || 0);
+      if (num === 0) return 'பூஜ்ஜியம்';
+      const onesExact = ['', 'ஒன்று', 'இரண்டு', 'மூன்று', 'நான்கு', 'ஐந்து', 'ஆறு', 'ஏழு', 'எட்டு', 'ஒன்பது'];
+      const onesPrefix = ['', 'ஒரு', 'இரண்டு', 'மூன்று', 'நான்கு', 'ஐந்து', 'ஆறு', 'ஏழு', 'எட்டு', 'ஒன்பது'];
+      const teens = ['பத்து', 'பதினொன்று', 'பன்னிரண்டு', 'பதிமூன்று', 'பதினான்கு', 'பதினைந்து', 'பதினாறு', 'பதினேழு', 'பதினெட்டு', 'பத்தொன்பது'];
+      const tensExact = ['', '', 'இருபது', 'முப்பது', 'நாற்பது', 'ஐம்பது', 'அறுபது', 'எழுபது', 'எண்பது', 'தொண்ணூறு'];
+      const tensPrefix = ['', '', 'இருபத்து', 'முப்பத்து', 'நாற்பத்து', 'ஐம்பத்து', 'அறுபத்து', 'எழுபத்து', 'எண்பத்து', 'தொண்ணூற்று'];
+      const hundredsExact = ['', 'நூறு', 'இருநூறு', 'முந்நூறு', 'நானூறு', 'ஐந்நூறு', 'ஆறு நூறு', 'ஏழு நூறு', 'எட்டு நூறு', 'தொள்ளாயிரம்'];
+      const hundredsPrefix = ['', 'நூற்று', 'இருநூற்று', 'முந்நூற்று', 'நானூற்று', 'ஐந்நூற்று', 'ஆறு நூற்று', 'ஏழு நூற்று', 'எட்டு நூற்று', 'தொள்ளாயிரத்து'];
+
+      function convertSub1000(n, isTerminal) {
+        let parts = [];
+        const h = Math.floor(n / 100);
+        const rem = n % 100;
+        if (h > 0) {
+          parts.push(rem === 0 ? hundredsExact[h] : hundredsPrefix[h]);
+        }
+        if (rem > 0) {
+          if (rem < 10) {
+            parts.push(isTerminal ? onesExact[rem] : onesPrefix[rem]);
+          } else if (rem < 20) {
+            parts.push(teens[rem - 10]);
+          } else {
+            const t = Math.floor(rem / 10);
+            const u = rem % 10;
+            if (u === 0) {
+              parts.push(tensExact[t]);
+            } else {
+              parts.push(tensPrefix[t] + ' ' + (isTerminal ? onesExact[u] : onesPrefix[u]));
+            }
+          }
+        }
+        return parts.join(' ');
+      }
+
+      let crore = Math.floor(num / 10000000);
+      num %= 10000000;
+      let lakh = Math.floor(num / 100000);
+      num %= 100000;
+      let thousand = Math.floor(num / 1000);
+      num %= 1000;
+      let rem = num;
+      let parts = [];
+
+      if (crore > 0) {
+        const isTerm = (lakh === 0 && thousand === 0 && rem === 0);
+        const cStr = (crore === 1 ? 'ஒரு' : convertSub1000(crore, false));
+        parts.push(cStr + ' ' + (isTerm ? 'கோடி' : 'கோடியே'));
+      }
+      if (lakh > 0) {
+        const isTerm = (thousand === 0 && rem === 0);
+        const lStr = (lakh === 1 ? 'ஒரு' : convertSub1000(lakh, false));
+        parts.push(lStr + ' ' + (isTerm ? 'இலட்சம்' : 'இலட்சத்து'));
+      }
+      if (thousand > 0) {
+        const isTerm = (rem === 0);
+        const tStr = (thousand === 1 ? 'ஒரு' : convertSub1000(thousand, false));
+        parts.push(tStr + ' ' + (isTerm ? 'ஆயிரம்' : 'ஆயிரத்து'));
+      }
+      if (rem > 0) {
+        parts.push(convertSub1000(rem, true));
+      }
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function formatWhatsAppDate(dateStr) {
+      let d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+      if (isNaN(d.getTime())) d = new Date();
+      const day = d.getDate();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day} ${month} ${year}`;
+    }
+
+    function formatWhatsAppTime() {
+      const d = new Date();
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      hours = hours % 12;
+      hours = hours ? String(hours).padStart(2, '0') : '12';
+      return `${hours}:${minutes} ${ampm}`;
+    }
+
     function formEntryData(){
       const g = v => Number($(v).value)||0;
       const mk = (o,a) => { const total = g(o)+g(a); return {opening:g(o), added:g(a), totalNotes:total, totalValue:total*(o==='t1_open'?D1:o==='t2_open'?D2:D3)}; };
@@ -365,30 +485,42 @@
     }
 
     function buildWhatsAppText(e){
-      const fmt = n => '₹' + Number(n||0).toLocaleString();
-      const t1=e.trays.t1, t2=e.trays.t2, t3=e.trays.t3;
-      const tray = (name, t, d) => `*${name} (${fmt(d)})*\nOpening: ${t.opening} | Added: ${t.added} | Total: ${t.totalNotes} notes\nValue: ${fmt(t.totalValue)}`;
-      const totalNotes = Number(t1.totalNotes)+Number(t2.totalNotes)+Number(t3.totalNotes);
-      const totalVal = cleanNum(t1.totalValue)+cleanNum(t2.totalValue)+cleanNum(t3.totalValue);
-      const loadedVal = (Number(t1.added||0)*D1)+(Number(t2.added||0)*D2)+(Number(t3.added||0)*D3);
+      const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN');
+      const fmtVal = n => '₹ ' + Number(n||0).toLocaleString('en-IN');
+      const dDate = formatWhatsAppDate(e.date);
+      const dTime = formatWhatsAppTime();
+
+      const items = [
+        { denom: D1, added: Number(e.trays?.t1?.added)||0 },
+        { denom: D2, added: Number(e.trays?.t2?.added)||0 },
+        { denom: D3, added: Number(e.trays?.t3?.added)||0 }
+      ];
+      items.sort((a, b) => b.denom - a.denom);
+
+      let totalAmount = 0;
+      const denomLines = [];
+      items.forEach(item => {
+        const val = item.added * item.denom;
+        totalAmount += val;
+        denomLines.push(`₹${item.denom}  x  ${item.added}  =  ${fmt(val)}`);
+      });
+
+      const wordsEn = numToWordsEN(totalAmount);
+      const wordsTa = numToWordsTA(totalAmount);
+
       return [
-        '*Cash Tray Entry Details*',
+        '💰 DENOMINATION REPORT',
+        `📅 ${dDate} | 🕒 ${dTime}`,
+        '──────────────────',
+        ...denomLines,
+        '──────────────────',
+        `TOTAL: ${fmtVal(totalAmount)}`,
         '',
-        '*Date:* ' + (e.date||'-'),
-        '*ATM:* ' + ((e.atmIds||[]).join(', ') || '-'),
-        '*Indent No:* ' + (e.bankIndentNo||'-'),
-        '*Indent Amount:* ' + fmt(e.bankIndentVal),
+        'IN WORDS (EN):',
+        `🔤 ${wordsEn} Rupees Only`,
+        `🇮🇳 TAMIL: ${wordsTa} ரூபாய் மட்டும்`,
         '',
-        tray('Tray 1', t1, D1),
-        '',
-        tray('Tray 2', t2, D2),
-        '',
-        tray('Tray 3', t3, D3),
-        '',
-        '*Summary*',
-        'Total Notes: ' + totalNotes,
-        'Total Value: ' + fmt(totalVal),
-        'Total Loaded: ' + fmt(loadedVal)
+        `FINAL AMOUNT: ${fmtVal(totalAmount)}`
       ].join('\n');
     }
 
@@ -797,21 +929,24 @@
     function renderMultiList(){
       const tbody = $('multiBody');
       if(!tbody) return;
-      const selected = new Set([...tbody.querySelectorAll('input:checked')].map(cb=>cb.value));
+      const selected = new Set([...tbody.querySelectorAll('input:checked')].map(cb=>String(cb.value)));
       tbody.innerHTML = '';
-      const sorted = [...globalData].sort((a,b)=> b.date.localeCompare(a.date));
+      const sorted = [...globalData].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
       sorted.forEach(e => {
-        const loaded = (Number(e.trays.t1.added)*D1)+(Number(e.trays.t2.added)*D2)+(Number(e.trays.t3.added)*D3);
-        const addTotal = Number(e.trays.t1.added)+Number(e.trays.t2.added)+Number(e.trays.t3.added);
+        const t1 = Number(e.trays?.t1?.added)||0;
+        const t2 = Number(e.trays?.t2?.added)||0;
+        const t3 = Number(e.trays?.t3?.added)||0;
+        const loaded = (t1*D1)+(t2*D2)+(t3*D3);
+        const addTotal = t1+t2+t3;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><input type="checkbox" value="${e.id}" ${selected.has(e.id)?'checked':''} onchange="updateMultiSummary()"></td>
-          <td>${e.date}</td><td>${(e.atmIds||[]).join(', ')}</td><td>${e.bankIndentNo}</td>
-          <td class="text-right">₹${Number(e.bankIndentVal).toLocaleString()}</td>
-          <td class="text-right">₹${loaded.toLocaleString()}</td>
-          <td class="text-right">${e.trays.t1.added}</td>
-          <td class="text-right">${e.trays.t2.added}</td>
-          <td class="text-right">${e.trays.t3.added}</td>
+          <td><input type="checkbox" value="${e.id}" ${selected.has(String(e.id))?'checked':''} onchange="updateMultiSummary()"></td>
+          <td>${e.date}</td><td>${(e.atmIds||[]).join(', ')}</td><td>${e.bankIndentNo||'-'}</td>
+          <td class="text-right">₹${Number(e.bankIndentVal||0).toLocaleString('en-IN')}</td>
+          <td class="text-right">₹${loaded.toLocaleString('en-IN')}</td>
+          <td class="text-right">${t1}</td>
+          <td class="text-right">${t2}</td>
+          <td class="text-right">${t3}</td>
           <td class="text-right" style="font-weight:600;">${addTotal}</td>`;
         tbody.appendChild(tr);
       });
@@ -820,7 +955,8 @@
 
     function multiSelectedEntries(){
       return [...document.querySelectorAll('#multiBody input:checked')]
-        .map(cb => globalData.find(x=>x.id===cb.value)).filter(Boolean);
+        .map(cb => globalData.find(x => String(x.id) === String(cb.value)))
+        .filter(Boolean);
     }
 
     function updateMultiSummary(){
@@ -830,23 +966,25 @@
       wrap.style.display='block';
       let indent=0, loaded=0, n200=0, n100=0, n500=0, notes=0, val=0;
       list.forEach(e => {
-        const t1=e.trays.t1, t2=e.trays.t2, t3=e.trays.t3;
+        const t1 = Number(e.trays?.t1?.added)||0;
+        const t2 = Number(e.trays?.t2?.added)||0;
+        const t3 = Number(e.trays?.t3?.added)||0;
         indent += Number(e.bankIndentVal)||0;
-        loaded += (Number(t1.added)*D1)+(Number(t2.added)*D2)+(Number(t3.added)*D3);
-        n200 += Number(t1.added); n100 += Number(t2.added); n500 += Number(t3.added);
-        notes += Number(t1.added)+Number(t2.added)+Number(t3.added);
-        val += (Number(t1.added)*D1)+(Number(t2.added)*D2)+(Number(t3.added)*D3);
+        loaded += (t1*D1)+(t2*D2)+(t3*D3);
+        n200 += t1; n100 += t2; n500 += t3;
+        notes += (t1 + t2 + t3);
+        val += (t1*D1)+(t2*D2)+(t3*D3);
       });
       const variance = indent - loaded;
       $('ms_days').textContent = list.length;
-      $('ms_indent').textContent = '₹'+indent.toLocaleString();
-      $('ms_loaded').textContent = '₹'+loaded.toLocaleString();
-      $('ms_variance').textContent = '₹'+variance.toLocaleString();
+      $('ms_indent').textContent = '₹'+indent.toLocaleString('en-IN');
+      $('ms_loaded').textContent = '₹'+loaded.toLocaleString('en-IN');
+      $('ms_variance').textContent = '₹'+variance.toLocaleString('en-IN');
       $('ms_variance').style.color = variance===0 ? '#16a34a' : '#ef4444';
-      $('ms_n200').textContent = n200.toLocaleString(); $('ms_v200').textContent = 'Value: ₹'+(n200*D1).toLocaleString();
-      $('ms_n100').textContent = n100.toLocaleString(); $('ms_v100').textContent = 'Value: ₹'+(n100*D2).toLocaleString();
-      $('ms_n500').textContent = n500.toLocaleString(); $('ms_v500').textContent = 'Value: ₹'+(n500*D3).toLocaleString();
-      $('ms_tnotes').textContent = notes.toLocaleString(); $('ms_tval').textContent = 'Value: ₹'+val.toLocaleString();
+      $('ms_n200').textContent = n200.toLocaleString('en-IN'); $('ms_v200').textContent = 'Value: ₹'+(n200*D1).toLocaleString('en-IN');
+      $('ms_n100').textContent = n100.toLocaleString('en-IN'); $('ms_v100').textContent = 'Value: ₹'+(n100*D2).toLocaleString('en-IN');
+      $('ms_n500').textContent = n500.toLocaleString('en-IN'); $('ms_v500').textContent = 'Value: ₹'+(n500*D3).toLocaleString('en-IN');
+      $('ms_tnotes').textContent = notes.toLocaleString('en-IN'); $('ms_tval').textContent = 'Value: ₹'+val.toLocaleString('en-IN');
     }
 
     function multiSelectAll(){
@@ -861,30 +999,58 @@
     function sendWhatsAppMulti(){
       const list = multiSelectedEntries();
       if(!list.length) return notify('Select at least one day in the Multi-Day tab', 'error');
-      const fmt = n => '₹' + Number(n||0).toLocaleString();
-      const lines = ['*Multi-Day Cash Tray Summary*', ''];
-      let indent=0, loaded=0, n200=0, n100=0, n500=0;
-      list.forEach(e => {
-        const t1=e.trays.t1, t2=e.trays.t2, t3=e.trays.t3;
-        const l = (Number(t1.added)*D1)+(Number(t2.added)*D2)+(Number(t3.added)*D3);
-        indent += Number(e.bankIndentVal)||0;
-        loaded += l;
-        n200 += Number(t1.added); n100 += Number(t2.added); n500 += Number(t3.added);
-        lines.push('*' + e.date + '* (' + (e.atmIds||[]).join(', ') + ')');
-        lines.push('Indent: ' + fmt(e.bankIndentVal) + ' | Loaded: ' + fmt(l));
+      const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN');
+      const fmtVal = n => '₹ ' + Number(n||0).toLocaleString('en-IN');
+      const dTime = formatWhatsAppTime();
+      const dDate = formatWhatsAppDate();
+
+      const sortedDays = [...list].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+      const denoms = [
+        { key: 't1', denom: D1 },
+        { key: 't2', denom: D2 },
+        { key: 't3', denom: D3 }
+      ];
+      denoms.sort((a, b) => b.denom - a.denom);
+
+      let totalAmount = 0;
+      const denomLines = [];
+
+      denoms.forEach(dObj => {
+        const dayCounts = sortedDays.map(e => Number(e.trays?.[dObj.key]?.added) || 0);
+        const sumNotes = dayCounts.reduce((a, b) => a + b, 0);
+        const lineVal = sumNotes * dObj.denom;
+        totalAmount += lineVal;
+
+        let calcStr = '';
+        if (sortedDays.length > 1) {
+          calcStr = `${dayCounts.join(' + ')} (${sumNotes} Notes)`;
+        } else {
+          calcStr = `${sumNotes}`;
+        }
+
+        denomLines.push(`₹${dObj.denom}  x  ${calcStr}  =  ${fmt(lineVal)}`);
       });
-      const variance = indent - loaded;
-      const notes = n200 + n100 + n500;
-      lines.push('', '*Combined Summary*');
-      lines.push('Days: ' + list.length);
-      lines.push('Total Indent: ' + fmt(indent));
-      lines.push('Total Loaded: ' + fmt(loaded));
-      lines.push('Variance: ' + fmt(variance));
-      lines.push('');
-      lines.push('₹200 Notes (Added): ' + n200.toLocaleString() + ' (' + fmt(n200*D1) + ')');
-      lines.push('₹100 Notes (Added): ' + n100.toLocaleString() + ' (' + fmt(n100*D2) + ')');
-      lines.push('₹500 Notes (Added): ' + n500.toLocaleString() + ' (' + fmt(n500*D3) + ')');
-      lines.push('Total Notes (Added): ' + notes.toLocaleString() + ' (' + fmt(loaded) + ')');
+
+      const wordsEn = numToWordsEN(totalAmount);
+      const wordsTa = numToWordsTA(totalAmount);
+
+      const lines = [
+        '💰 MULTI-DAY DENOMINATION REPORT',
+        `📅 ${dDate} | 🕒 ${dTime}`,
+        `📊 Selected: ${sortedDays.length} Days`,
+        '──────────────────',
+        ...denomLines,
+        '──────────────────',
+        `TOTAL: ${fmtVal(totalAmount)}`,
+        '',
+        'IN WORDS (EN):',
+        `🔤 ${wordsEn} Rupees Only`,
+        `🇮🇳 TAMIL: ${wordsTa} ரூபாய் மட்டும்`,
+        '',
+        `FINAL AMOUNT: ${fmtVal(totalAmount)}`
+      ];
+
       let wa = '';
       try { wa = (JSON.parse(localStorage.getItem('ctm_v53')||'{}').wa)||''; } catch(err){ /* ignore malformed settings */ }
       wa = String(wa).replace(/[^\d]/g,'');
