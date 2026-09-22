@@ -524,13 +524,38 @@
       ].join('\n');
     }
 
+    function openNormalWhatsApp(text, phone){
+      phone = String(phone || '').replace(/[^\d]/g, '');
+      const encoded = encodeURIComponent(text);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isAndroid) {
+        // Specifically targets Normal WhatsApp (com.whatsapp) on Android devices
+        const phoneParam = phone ? `&phone=${phone}` : '';
+        const intentUrl = `intent://send?text=${encoded}${phoneParam}#Intent;package=com.whatsapp;scheme=whatsapp;end`;
+        window.location.href = intentUrl;
+        return;
+      }
+
+      if (isMobile) {
+        const phoneParam = phone ? `phone=${phone}&` : '';
+        window.location.href = `whatsapp://send?${phoneParam}text=${encoded}`;
+        return;
+      }
+
+      const url = phone 
+        ? `https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`
+        : `https://web.whatsapp.com/send?text=${encoded}`;
+      window.open(url, '_blank');
+    }
+
     function sendWhatsApp(idOrObj){
       const e = typeof idOrObj === 'string' ? globalData.find(x => x.id === idOrObj) : (idOrObj || formEntryData());
       if(!e || !e.date || !e.bankIndentNo) return notify('Fill the entry details first', 'error');
       let wa = '';
       try { wa = (JSON.parse(localStorage.getItem('ctm_v53')||'{}').wa)||''; } catch(err){ /* ignore malformed settings */ }
-      wa = String(wa).replace(/[^\d]/g,'');
-      window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(buildWhatsAppText(e)), '_blank');
+      openNormalWhatsApp(buildWhatsAppText(e), wa);
     }
 
     /* ================= 2-PAGE PRINT LOGIC ================= */
@@ -1053,8 +1078,7 @@
 
       let wa = '';
       try { wa = (JSON.parse(localStorage.getItem('ctm_v53')||'{}').wa)||''; } catch(err){ /* ignore malformed settings */ }
-      wa = String(wa).replace(/[^\d]/g,'');
-      window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+      openNormalWhatsApp(lines.join('\n'), wa);
     }
 
     /* ================= FIXED ANALYTICS (ADDED NOTES ONLY) ================= */
